@@ -9,15 +9,15 @@ async function _inflate(u8) {
   const stream = new Blob([u8]).stream().pipeThrough(new DecompressionStream("gzip"));
   return await new Response(stream).text();
 }
-const PARTS = 11;
+const FILES = ["/payload/0.txt", "/payload/r0.txt", "/payload/r1.txt", "/payload/r2.txt", "/payload/r3.txt"];
 let _mountPromise;
 function _resolveMount() {
   if (!_mountPromise) {
     _mountPromise = (async () => {
       const texts = await Promise.all(
-        Array.from({ length: PARTS }, (_, i) =>
-          fetch("/payload/" + i + ".txt").then((r) => {
-            if (!r.ok) throw new Error("missing payload " + i);
+        FILES.map((url) =>
+          fetch(url).then((r) => {
+            if (!r.ok) throw new Error("missing " + url);
             return r.text();
           })
         )
