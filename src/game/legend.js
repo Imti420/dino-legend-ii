@@ -13,10 +13,11 @@ let _mountPromise;
 function _resolveMount() {
   if (!_mountPromise) {
     _mountPromise = (async () => {
-      const r2 = await fetch("/legend.gz.b64.txt");
-      if (!r2.ok) throw new Error("missing legend payload");
-      const text = await r2.text();
-      const b64 = text.replace(/\s+/g, "");
+      const [a, b] = await Promise.all([
+        fetch("/legend.gz.b64.a.txt").then((r) => { if (!r.ok) throw new Error("missing payload a"); return r.text(); }),
+        fetch("/legend.gz.b64.b.txt").then((r) => { if (!r.ok) throw new Error("missing payload b"); return r.text(); }),
+      ]);
+      const b64 = (a + b).replace(/\s+/g, "");
       let src = await _inflate(_u8(b64));
       src = src.replace("export function mountDinoLegend", "function mountDinoLegend");
       return new Function(src + "\n; return mountDinoLegend;")();
