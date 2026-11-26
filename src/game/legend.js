@@ -9,15 +9,20 @@ async function _inflate(u8) {
   const stream = new Blob([u8]).stream().pipeThrough(new DecompressionStream("gzip"));
   return await new Response(stream).text();
 }
+const PARTS = 11;
 let _mountPromise;
 function _resolveMount() {
   if (!_mountPromise) {
     _mountPromise = (async () => {
-      const [a, b] = await Promise.all([
-        fetch("/legend.gz.b64.a.txt").then((r) => { if (!r.ok) throw new Error("missing payload a"); return r.text(); }),
-        fetch("/legend.gz.b64.b.txt").then((r) => { if (!r.ok) throw new Error("missing payload b"); return r.text(); }),
-      ]);
-      const b64 = (a + b).replace(/\s+/g, "");
+      const texts = await Promise.all(
+        Array.from({ length: PARTS }, (_, i) =>
+          fetch("/payload/" + i + ".txt").then((r) => {
+            if (!r.ok) throw new Error("missing payload " + i);
+            return r.text();
+          })
+        )
+      );
+      const b64 = texts.join("").replace(/\s+/g, "");
       let src = await _inflate(_u8(b64));
       src = src.replace("export function mountDinoLegend", "function mountDinoLegend");
       return new Function(src + "\n; return mountDinoLegend;")();
